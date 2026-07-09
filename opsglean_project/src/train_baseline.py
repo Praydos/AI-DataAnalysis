@@ -12,18 +12,15 @@ Usage:
     python src/train_baseline.py
 """
 
+import sys
 import joblib
 import pandas as pd
 from pathlib import Path
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import (
-    classification_report,
-    confusion_matrix,
-    precision_recall_fscore_support,
-    roc_auc_score,
-)
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT / "src"))
+from evaluate import evaluate
 TRAIN_PATH = PROJECT_ROOT / "data" / "processed" / "train.csv"
 TEST_PATH = PROJECT_ROOT / "data" / "processed" / "test.csv"
 MODEL_PATH = PROJECT_ROOT / "models" / "baseline_logreg.pkl"
@@ -59,22 +56,7 @@ def main():
     y_pred = model.predict(X_test)
     y_proba = model.predict_proba(X_test)[:, 1]
 
-    precision, recall, f1, _ = precision_recall_fscore_support(
-        y_test, y_pred, average="binary", zero_division=0
-    )
-    auc = roc_auc_score(y_test, y_proba)
-
-    print("\n=== Baseline Logistic Regression — Test Set Results ===")
-    print(f"Precision: {precision:.4f}")
-    print(f"Recall:    {recall:.4f}")
-    print(f"F1 score:  {f1:.4f}")
-    print(f"ROC-AUC:   {auc:.4f}")
-
-    print("\nConfusion matrix (rows=actual, cols=predicted, [Normal, Anomaly]):")
-    print(confusion_matrix(y_test, y_pred))
-
-    print("\nFull classification report:")
-    print(classification_report(y_test, y_pred, target_names=["Normal", "Anomaly"], zero_division=0))
+    evaluate(y_test, y_pred, y_proba, model_name="Baseline Logistic Regression")
 
     MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(model, MODEL_PATH)
